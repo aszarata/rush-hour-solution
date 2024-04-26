@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include <sstream>
 #include <vector>
 #include <map>
 #include <string>
@@ -142,7 +143,7 @@ class Board {
 		string getHistory();
 		string getSollution();
 
-		vector<int> getPossibleMoves(Car car);
+		vector<int> getPossibleMoves(Car& car);
 
 		void placeBound(int x, int y);
 		void placeWinField(int x, int y);
@@ -264,7 +265,7 @@ string Board::getSollution() {
 
 
 // Get possible numbers of steps that the car can move
-vector<int> Board::getPossibleMoves(Car car) {
+vector<int> Board::getPossibleMoves(Car& car) {
 	int forward_step = 1;
 	int backward_step = -1;
 
@@ -362,6 +363,14 @@ void Board::updateHistory(vector<int> oldPosition, bool isHorizontal, int steps)
 	gameLength += 1;
 	history += "\n";
 
+	if (isSolved()){
+		if (isHorizontal) {
+			steps += 1;
+		} else {
+			steps -= 1;
+		}
+	}
+
 	history += to_string(oldPosition[0]) + " " + to_string(oldPosition[1]) + " ";
 
 	if (isHorizontal){
@@ -435,9 +444,9 @@ class Solver {
 
 		Solver();
 
-		vector<Board> getPossibleBoards(Board board);
+		vector<Board> getPossibleBoards(Board& board);
 
-		string run(Board board, int maxDepth);
+		string run(Board& board, int maxDepth);
 
 };
 
@@ -445,7 +454,7 @@ class Solver {
 Solver::Solver() {}
 
 // Generates the list of boards achivable from current board in one moc=ve
-vector<Board> Solver::getPossibleBoards(Board board){
+vector<Board> Solver::getPossibleBoards(Board& board){
 
 	vector<Board> possibleBoards;
 
@@ -458,7 +467,6 @@ vector<Board> Solver::getPossibleBoards(Board board){
 		vector<int> steps = board.getPossibleMoves(car);
 		int numOptions = steps.size();
 		
-
 		for (int j = 0; j < numOptions; j++) {
 
 			Board newBoard = Board(
@@ -472,8 +480,7 @@ vector<Board> Solver::getPossibleBoards(Board board){
 				board.getHistory()
 			);
 
-			Car newCar = newBoard.cars[i];
-			newBoard.moveCar(newCar, steps[j]);
+			newBoard.moveCar(newBoard.cars[i], steps[j]);
 
 			possibleBoards.push_back(newBoard);
 		}
@@ -484,7 +491,7 @@ vector<Board> Solver::getPossibleBoards(Board board){
 }
 
 // Main solver using BFS algorithm
-string Solver::run(Board initialBoard, int maxDepth){
+string Solver::run(Board& initialBoard, int maxDepth){
 	
 	visited[initialBoard] = initialBoard;
 	Q.push(initialBoard);
@@ -598,6 +605,7 @@ Board parse_args(int W, int H, vector<string> rows) {
 				dean_car_not_found = false;
 				Car car = createDeanCar(rows, i, j, W, H);
 				board.addCar(car);
+
 			} else if (symbol == '.' && (j == 0 || i == W - 1)){
 				board.placeWinField(i, j);
 			}
@@ -611,26 +619,71 @@ Board parse_args(int W, int H, vector<string> rows) {
 /*
 	Main Code
 */
-
 int main(int argc, char *argv[]){
+// int main(){
 
-	vector<string> rows;
+	vector<string> map2d_rows;
+    // string input;
+    // getline(cin, input);
+
+    // istringstream iss(input);
+
+    // int rows, cols, steps;
+
+    // iss >> cols >> rows >> steps;
+
+    // int H = rows;
+    // int W = cols;
+	// int N = steps;
+
+    // string line;
+    // while (getline(cin, line)) {
+    //     if (!line.empty()) {
+    //         map2d_rows.push_back(line);
+    //     }
+    // }
 	
 	int W = stoi(argv[1]);
 	int H = stoi(argv[2]);
 	int N = stoi(argv[3]);
 
 	for (int i = 4; i < H + 4; i++) {
-		rows.push_back(argv[i]);
+		map2d_rows.push_back(argv[i]);
 	}
 
-	Board board = parse_args(W, H, rows);
+	Board board = parse_args(W, H, map2d_rows);
+
 	Solver solver = Solver();
 
 	string solution = solver.run(board, N);
 
 	cout << solution << endl;
 
+	// Car car1 = board.cars[2];
+	// Car car2 = board.cars[3];
+	// Car car3 = board.cars[5];
+
+	// board.moveCar(car1, 1);
+	// board.moveCar(car2, -1);
+	// board.moveCar(car3, -3);
+
+	// cout << board.getCars()[5].getStartPoint()[1] << endl;
+	// cout << board.getSollution() << endl;
+	
+	// vector<int> moves = board.getPossibleMoves(car3);
+	// for (int i=0; i<moves.size(); i++){
+	// 	cout << moves[i] << endl;
+	// }
+
+	// board.printMap2d();
+	// cout <<  endl;
+
+	// vector<Board> new_boards = solver.getPossibleBoards(board);
+	// for (int i = 0; i < new_boards.size(); i++){
+	// 	cout <<new_boards[i].getSollution() << endl;
+	// }
+
+	// 
 
 	// vector<Board> boards = solver.getPossibleBoards(board);
 	// int numBoards = boards.size();
