@@ -3,7 +3,7 @@ CFLAGS = -Wall -std=c++11
 
 TARGET = program 
 
-TEST_FILE = chb/test2
+TEST_FILE = chb/test10
 
 all: $(TARGET)
 

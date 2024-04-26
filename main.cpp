@@ -140,6 +140,7 @@ class Board {
 		vector<int> getWinField();
 		int getGameLength();
 		string getHistory();
+		string getSollution();
 
 		vector<int> getPossibleMoves(Car car);
 
@@ -254,6 +255,10 @@ int Board::getGameLength() {
 }
 
 string Board::getHistory(){
+	return history;
+}
+
+string Board::getSollution() {
 	return to_string(gameLength) + history;
 }
 
@@ -354,6 +359,7 @@ void Board::moveCar(Car& car, int steps) {
 
 // Update the history for future display
 void Board::updateHistory(vector<int> oldPosition, bool isHorizontal, int steps) {
+	gameLength += 1;
 	history += "\n";
 
 	history += to_string(oldPosition[0]) + " " + to_string(oldPosition[1]) + " ";
@@ -488,7 +494,7 @@ string Solver::run(Board initialBoard, int maxDepth){
 		Q.pop();
 
 		if (currentBoard.isSolved()){
-			return currentBoard.getHistory();
+			return currentBoard.getSollution();
 		}
 
 		// Get all the neighbours
@@ -499,8 +505,8 @@ string Solver::run(Board initialBoard, int maxDepth){
 		for (int i = 0; i < neighboursSize; i++) {
 			Board neighbour = neighbours[i];
 
-			// check if the neighbour was already calculated
-			if (!visited.count(neighbour)) {
+			// check if the neighbour was already calculated and if the game is not to long
+			if (!visited.count(neighbour) && neighbour.getGameLength() <= maxDepth) {
 				visited[neighbour] = neighbour;
 
 				Q.push(neighbour);
@@ -509,7 +515,7 @@ string Solver::run(Board initialBoard, int maxDepth){
 	}
 	
 
-	return "No solution";
+	return "0";
 }
 
 
@@ -634,11 +640,11 @@ int main(int argc, char *argv[]){
 	// 	cout << boards[i].getHistory() << endl;
 	// }
 
-	int i = 4;
+	// int i = 4;
 
-	while (i < argc){
-		cout << " " << argv[i] << endl;
-		i++;
-		}
-	return 	0;
+	// while (i < argc){
+	// 	cout << " " << argv[i] << endl;
+	// 	i++;
+	// 	}
+	// return 	0;
 }
