@@ -33,6 +33,7 @@ class Car {
 
 		vector<int> getStartPositionAfterMove(int steps);
 		vector<int> getEndPositionAfterMove(int steps);
+		bool getIsHorizontal();
 		void move(int steps);
 };
 
@@ -75,6 +76,9 @@ vector<int> Car::getEndPositionAfterMove(int steps){
 
 	return newPosition;
 }
+
+// Is horizontal
+bool Car::getIsHorizontal() {return isHorizontal;}
 
 
 // Move
@@ -122,6 +126,7 @@ class Board {
 		vector<vector<bool>> map2d;
 		vector<Car> cars;
 		vector<int> winField;
+		bool goalIsHorizontal;
 		int numCars = 0;
 		
 		int gameLength = 0; 
@@ -129,7 +134,7 @@ class Board {
 
 		Board();
 		Board(int W, int H);
-		Board(int W, int H, vector<vector<bool>> newMap2d, vector<Car> newCars, vector<int> newWinField, int carsNumber, int newGameLenght, string newHistory);
+		Board(int W, int H, vector<vector<bool>> newMap2d, vector<Car> newCars, vector<int> newWinField, int carsNumber, int newGameLenght, string newHistory, bool goalIsHorizontal);
 
 
 		int getWidth();
@@ -147,6 +152,7 @@ class Board {
 
 		void placeBound(int x, int y);
 		void placeWinField(int x, int y);
+		void setGoalOrientation(bool isHorizontal);
 
 		void placeCar(Car& car);
 		void deleteCar(Car& car);
@@ -159,6 +165,7 @@ class Board {
 		bool canMoveBy(Car& car, int steps);
 		bool isSolved();
 
+		int heuristics() const;
 	
 		void printMap2d();
 
@@ -206,7 +213,7 @@ Board::Board(int W, int H){
 }
 
 // Full board constructor
-Board::Board(int W, int H, vector<vector<bool>> newMap2d, vector<Car> newCars, vector<int> newWinField, int carsNumber, int newGameLength, string newHistory){
+Board::Board(int W, int H, vector<vector<bool>> newMap2d, vector<Car> newCars, vector<int> newWinField, int carsNumber, int newGameLength, string newHistory, bool goalHorizontal){
 	width = W;
 	height = H;
 	map2d = newMap2d;
@@ -215,6 +222,7 @@ Board::Board(int W, int H, vector<vector<bool>> newMap2d, vector<Car> newCars, v
 	numCars = carsNumber;
 	gameLength = newGameLength;
 	history = newHistory;
+	goalIsHorizontal = goalHorizontal;
 }
 
 
@@ -298,6 +306,11 @@ void Board::placeBound(int x, int y) {
 void Board::placeWinField(int x, int y) {
 	winField.push_back(x);
 	winField.push_back(y);
+}
+
+// Mark if the goal is horizontal
+void Board::setGoalOrientation(bool isHorizontal) {
+	goalIsHorizontal = isHorizontal;
 }
 
 // Place a car on map2d
@@ -421,6 +434,20 @@ bool Board::isSolved(){
 	return getMap2dOn(xPos, yPos);
 }
 
+// Heuristics counting number of obstacles for the dean car
+int Board::heuristics() const {
+	
+	int obstacleCounter = 0;
+
+	if (goalIsHorizontal) {
+		for (int i = 0; i < width; i++) obstacleCounter += map2d[winField[1]][i];
+	} else {
+		for (int i = 0; i < height; i++) obstacleCounter += map2d[i][winField[0]];
+	}
+
+	return obstacleCounter - 2;
+}
+
 
 // Additional
 // Display map
@@ -437,9 +464,18 @@ void Board::printMap2d() {
 	BFS Solver
 */
 
+// Custom priority queue comparer
+struct Compare {
+	bool operator()(const Board &a, const Board &b) {
+        return a.heuristics() > b.heuristics();  // we want the smallest heuristics on top
+    }
+};
+
+// BFS
 class Solver {
 	public:
 		queue<Board> Q;
+		priority_queue<Board, vector<Board>, Compare> PQ;
 		map<Board, Board> visited;
 
 		Solver();
@@ -447,6 +483,7 @@ class Solver {
 		vector<Board> getPossibleBoards(Board& board);
 
 		string run(Board& board, int maxDepth);
+		string runHeuristics(Board& board, int maxDepth);
 
 };
 
@@ -477,7 +514,8 @@ vector<Board> Solver::getPossibleBoards(Board& board){
 				board.getWinField(),
 				board.getNumCars(),
 				board.getGameLength(),
-				board.getHistory()
+				board.getHistory(),
+				board.goalIsHorizontal
 			);
 
 			newBoard.moveCar(newBoard.cars[i], steps[j]);
@@ -517,6 +555,46 @@ string Solver::run(Board& initialBoard, int maxDepth){
 				visited[neighbour] = neighbour;
 
 				Q.push(neighbour);
+			}
+		}
+	}
+	
+
+	return "0";
+}
+
+// Main solver using BFS algorithm wirh heuristics
+string Solver::runHeuristics(Board& initialBoard, int maxDepth){
+	
+	visited[initialBoard] = initialBoard;
+	PQ.push(initialBoard);
+
+	while (!PQ.empty()) {
+		Board currentBoard = PQ.top();
+		PQ.pop();
+
+		if (currentBoard.isSolved()){
+			return currentBoard.getSollution();
+		}
+
+		// currentBoard.printMap2d();
+		// cout << currentBoard.heuristics() << endl;
+		// string a;
+		// cin >> a;
+
+		// Get all the neighbours
+		vector<Board> neighbours = getPossibleBoards(currentBoard);
+
+		int neighboursSize = neighbours.size();
+
+		for (int i = 0; i < neighboursSize; i++) {
+			Board neighbour = neighbours[i];
+
+			// check if the neighbour was already calculated and if the game is not to long
+			if (!visited.count(neighbour) && neighbour.getGameLength() <= maxDepth) {
+				visited[neighbour] = neighbour;
+
+				PQ.push(neighbour);
 			}
 		}
 	}
@@ -604,9 +682,10 @@ Board parse_args(int W, int H, vector<string> rows) {
 			} else if (symbol == 'o' && dean_car_not_found) {
 				dean_car_not_found = false;
 				Car car = createDeanCar(rows, i, j, W, H);
+				board.setGoalOrientation(car.getIsHorizontal());
 				board.addCar(car);
 
-			} else if (symbol == '.' && (j == 0 || i == W - 1)){
+			} else if (symbol == '.' && (j == 0 || j == H - 1 || i == 0 || i == W - 1)){
 				board.placeWinField(i, j);
 			}
 			
@@ -619,46 +698,57 @@ Board parse_args(int W, int H, vector<string> rows) {
 /*
 	Main Code
 */
-int main(int argc, char *argv[]){
-// int main(){
+//  int main(int argc, char *argv[]){
+int main(){
 
 	vector<string> map2d_rows;
-    // string input;
-    // getline(cin, input);
 
-    // istringstream iss(input);
+	// project purposes runner
+    string input;
+    getline(cin, input);
 
-    // int rows, cols, steps;
+    istringstream iss(input);
 
-    // iss >> cols >> rows >> steps;
+    int rows, cols, steps;
 
-    // int H = rows;
-    // int W = cols;
-	// int N = steps;
+    iss >> cols >> rows >> steps;
 
-    // string line;
-    // while (getline(cin, line)) {
-    //     if (!line.empty()) {
-    //         map2d_rows.push_back(line);
-    //     }
-    // }
+    int H = rows;
+    int W = cols;
+	int N = steps;
+
+    string line;
+    while (getline(cin, line)) {
+        if (!line.empty()) {
+            map2d_rows.push_back(line);
+        }
+    }
 	
-	int W = stoi(argv[1]);
-	int H = stoi(argv[2]);
-	int N = stoi(argv[3]);
+	// // system args
+	// int W = stoi(argv[1]);
+	// int H = stoi(argv[2]);
+	// int N = stoi(argv[3]);
 
-	for (int i = 4; i < H + 4; i++) {
-		map2d_rows.push_back(argv[i]);
-	}
+	// for (int i = 4; i < H + 4; i++) {
+	// 	map2d_rows.push_back(argv[i]);
+	// }
 
+
+	// sollution
 	Board board = parse_args(W, H, map2d_rows);
 
 	Solver solver = Solver();
 
-	string solution = solver.run(board, N);
+	// // Basic BFS solving algorithm
+	// string solution = solver.run(board, N);
+
+	// // Heuristics counting the number of obstacles
+	string solution = solver.runHeuristics(board, N);
+
 
 	cout << solution << endl;
 
+	// // tests
 	// Car car1 = board.cars[2];
 	// Car car2 = board.cars[3];
 	// Car car3 = board.cars[5];
