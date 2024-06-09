@@ -698,40 +698,40 @@ Board parse_args(int W, int H, vector<string> rows) {
 /*
 	Main Code
 */
-//  int main(int argc, char *argv[]){
-int main(){
+ int main(int argc, char *argv[]){
+// int main(){
 
 	vector<string> map2d_rows;
 
-	// project purposes runner
-    string input;
-    getline(cin, input);
+	// // project purposes runner
+    // string input;
+    // getline(cin, input);
 
-    istringstream iss(input);
+    // istringstream iss(input);
 
-    int rows, cols, steps;
+    // int rows, cols, steps;
 
-    iss >> cols >> rows >> steps;
+    // iss >> cols >> rows >> steps;
 
-    int H = rows;
-    int W = cols;
-	int N = steps;
+    // int H = rows;
+    // int W = cols;
+	// int N = steps;
 
-    string line;
-    while (getline(cin, line)) {
-        if (!line.empty()) {
-            map2d_rows.push_back(line);
-        }
-    }
+    // string line;
+    // while (getline(cin, line)) {
+    //     if (!line.empty()) {
+    //         map2d_rows.push_back(line);
+    //     }
+    // }
 	
-	// // system args
-	// int W = stoi(argv[1]);
-	// int H = stoi(argv[2]);
-	// int N = stoi(argv[3]);
+	// system args
+	int W = stoi(argv[1]);
+	int H = stoi(argv[2]);
+	int N = stoi(argv[3]);
 
-	// for (int i = 4; i < H + 4; i++) {
-	// 	map2d_rows.push_back(argv[i]);
-	// }
+	for (int i = 4; i < H + 4; i++) {
+		map2d_rows.push_back(argv[i]);
+	}
 
 
 	// sollution
